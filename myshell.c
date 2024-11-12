@@ -25,7 +25,8 @@ void execute_command(char *args[], int background) {
             if (args[1] == NULL) {
                 fprintf(stderr, "cd: missing argument\n");
             } else if (chdir(args[1]) != 0) {
-                perror("cd failed");
+                perror("cd error");
+                fprintf(stderr, "cd: failed to change directory to '%s'\n", args[1]);
             }
             exit(0);
         } else if (strcmp(args[0], "pwd") == 0) {
@@ -34,12 +35,16 @@ void execute_command(char *args[], int background) {
             if (getcwd(cwd, sizeof(cwd)) != NULL) {
                 printf("%s\n", cwd);
             } else {
-                perror("pwd failed");
+                perror("pwd error");
+                fprintf(stderr, "pwd: failed to get current working directory\n");
             }
             exit(0);
         } else if (strcmp(args[0], "clear") == 0) {
             // Clear the terminal screen
-            system("clear");
+            if (system("clear") == -1) {
+                perror("clear error");
+                fprintf(stderr, "clear: failed to clear the screen\n");
+            }
             exit(0);
         }
 
@@ -49,7 +54,8 @@ void execute_command(char *args[], int background) {
                 // input redirection
                 int fd = open(args[i + 1], O_RDONLY);
                 if (fd < 0) {
-                    perror("Open input file failed!");
+                    perror("Input redirection error");
+                    fprintf(stderr, "Failed to open input file '%s'\n", args[i + 1]);
                     exit(1);
                 }
                 dup2(fd, STDIN_FILENO);
@@ -59,7 +65,8 @@ void execute_command(char *args[], int background) {
                 // output redirection
                 int fd = open(args[i + 1], O_CREAT | O_WRONLY, 0644);
                 if (fd < 0) {
-                    perror("Open output file failed!");
+                    perror("Output redirection error");
+                    fprintf(stderr, "Failed to open output file '%s'\n", args[i + 1]);
                     exit(1);
                 }
                 dup2(fd, STDOUT_FILENO);
@@ -73,7 +80,8 @@ void execute_command(char *args[], int background) {
 
         // Execute the command
         if (execvp(args[0], args) == -1) {
-            perror("Execution failed!");
+            perror("Execution error");
+            fprintf(stderr, "Failed to execute command '%s'\n", args[0]);
         }
         exit(0);
     } else {
@@ -84,6 +92,7 @@ void execute_command(char *args[], int background) {
         }
     }
 }
+
 
 void parse_command(char *command, char *args[], int *background) {
     int i = 0;
